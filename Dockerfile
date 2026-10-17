@@ -1,9 +1,8 @@
-FROM nvcr.io/nvidia/pytorch:22.11-py3
+FROM python:3.10-slim
 
-RUN rm -rf /workspace/*
-WORKDIR /workspace/unet
+WORKDIR /workspace/scallion-lane-segmentation
 
-ADD requirements.txt .
-RUN pip install --no-cache-dir --upgrade --pre pip
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-ADD . .
+COPY . .
+CMD ["python", "inference_complete.py", "--help"]

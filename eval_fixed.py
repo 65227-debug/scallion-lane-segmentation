@@ -3,7 +3,7 @@
 直接计算Kappa、FPS、mIoU、MPA、Params
 
 使用方法:
-    python eval_fixed.py --checkpoint checkpoints/checkpoint_epoch200.pth --classes 3 --use-dsem --use-dacg
+    python eval_fixed.py --checkpoint model.pth --classes 3 --use-dsem --use-dacg
 """
 
 import torch
@@ -68,7 +68,9 @@ def load_model_smart(checkpoint_path, device, args):
     model = UNet(
         n_channels=3,
         n_classes=args.classes,
+        bilinear=args.bilinear,
         use_dsem=use_dsem,
+        reduction=args.reduction,
         use_dacg=use_dacg,
         use_tgsm=use_tgsm,
         tgsm_version=args.tgsm_version
@@ -259,6 +261,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--classes', type=int, default=3)
+    parser.add_argument('--bilinear', action='store_true')
+    parser.add_argument('--reduction', type=int, default=4)
     parser.add_argument('--use-dsem', action='store_true')
     parser.add_argument('--use-dacg', action='store_true')
     parser.add_argument('--use-tgsm', action='store_true')
@@ -348,7 +352,7 @@ def main():
             mask = torch.from_numpy(np.array(mask)).long()
 
             # 映射标签值 [0, 85, 170] -> [0, 1, 2]
-            mask_mapped = torch.zeros_like(mask)
+            mask_mapped = torch.full_like(mask, 255)
             mask_mapped[mask == 0] = 0
             mask_mapped[mask == 85] = 1
             mask_mapped[mask == 170] = 2

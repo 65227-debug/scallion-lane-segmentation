@@ -1,10 +1,10 @@
 """
 自动检测Checkpoint所需的模型配置
-通过分析参数名称和形状推断训练时使用的配置
+通过分析参数名称和形状推断模型结构
 """
 
 import torch
-import sys
+import argparse
 from pathlib import Path
 
 
@@ -65,7 +65,8 @@ def detect_model_config(checkpoint_path):
                 break
 
     # 2. 检测DSEM
-    dsem_keys = [k for k in state_dict.keys() if 'dsem' in k.lower()]
+    dsem_keys = [k for k in state_dict.keys()
+                 if 'dsem' in k.lower() or '.dir_convs.' in k]
     if dsem_keys:
         config['use_dsem'] = True
         print(f"\n检测到DSEM模块 ({len(dsem_keys)} 个参数)")
@@ -85,8 +86,11 @@ def detect_model_config(checkpoint_path):
         print(f"\n检测到TGSM模块 ({len(tgsm_keys)} 个参数)")
         print("  → use_tgsm = True")
 
-        # 尝试检测TGSM版本（较难，先使用默认）
-        print("  → tgsm_version = 'enhanced' (默认)")
+        if any('topo_gate.' in key for key in tgsm_keys):
+            config['tgsm_version'] = 'advanced'
+        elif any('dir_agg.proj_h.weight' in key for key in tgsm_keys):
+            config['tgsm_version'] = 'basic'
+        print(f"  → tgsm_version = '{config['tgsm_version']}'")
 
     # 5. 检测类别数
     outc_weight_keys = [k for k in state_dict.keys() if 'outc.conv.weight' in k]
@@ -104,7 +108,7 @@ def detect_model_config(checkpoint_path):
     cmd_parts = ["python inference_complete.py"]
     cmd_parts.append("    --image-dir <your_image_dir>")
     cmd_parts.append("    --mask-dir <your_mask_dir>")
-    cmd_parts.append(f"    --model-path {checkpoint_path}")
+    cmd_parts.append(f"    --model {checkpoint_path}")
     cmd_parts.append("    --output-dir ./inference_results")
     cmd_parts.append("    --scale 0.5")
     cmd_parts.append(f"    --classes {config['n_classes']}")
@@ -148,18 +152,12 @@ model = UNet(
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("使用方法: python detect_config.py <checkpoint_path>")
-        print("示例: python detect_config.py /path/to/model.pth")
-        sys.exit(1)
-
-    checkpoint_path = sys.argv[1]
-
-    if not Path(checkpoint_path).exists():
-        print(f"❌ 错误: 文件不存在: {checkpoint_path}")
-        sys.exit(1)
-
-    detect_model_config(checkpoint_path)
+    parser = argparse.ArgumentParser(description='Detect model architecture from a checkpoint')
+    parser.add_argument('checkpoint_path', type=Path, help='Path to model.pth')
+    args = parser.parse_args()
+    if not args.checkpoint_path.is_file():
+        parser.error(f'Checkpoint does not exist: {args.checkpoint_path}')
+    detect_model_config(args.checkpoint_path)
 
 
 if __name__ == '__main__':

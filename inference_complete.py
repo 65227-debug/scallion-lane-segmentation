@@ -28,6 +28,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+from unet import UNet as ProjectUNet
+
 
 # ==================== UNet 基础模块 ====================
 
@@ -772,6 +774,7 @@ def main():
 
     # 模型参数
     parser.add_argument('--classes', type=int, default=3, help='类别数')
+    parser.add_argument('--reduction', type=int, default=4, help='DSEM通道降维比例')
     parser.add_argument('--scale', type=float, default=0.5, help='图像缩放比例')
     parser.add_argument('--use-dsem', action='store_true', help='使用DSEM模块')
     parser.add_argument('--use-dacg', action='store_true', help='使用DACG模块')
@@ -807,11 +810,12 @@ def main():
     logging.info(f'Model configuration: {config_str}')
 
     # 加载模型
-    model = UNet(
+    model = ProjectUNet(
         n_channels=3,
         n_classes=args.classes,
         bilinear=args.bilinear,
         use_dsem=args.use_dsem,
+        reduction=args.reduction,
         use_dacg=args.use_dacg,
         use_tgsm=args.use_tgsm,
         tgsm_version=args.tgsm_version

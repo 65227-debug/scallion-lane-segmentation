@@ -6,7 +6,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
-from torchvision import transforms
 
 from utils.data_loading import BasicDataset
 from unet import UNet
@@ -35,7 +34,7 @@ def predict_img(net,
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
-    parser.add_argument('--model', '-m', default='MODEL.pth', metavar='FILE',
+    parser.add_argument('--model', '-m', default='model.pth', metavar='FILE',
                         help='Specify the file in which the model is stored')
     parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=True)
     parser.add_argument('--output', '-o', metavar='OUTPUT', nargs='+', help='Filenames of output images')
@@ -47,7 +46,13 @@ def get_args():
     parser.add_argument('--scale', '-s', type=float, default=0.5,
                         help='Scale factor for the input images')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
-    parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
+    parser.add_argument('--classes', '-c', type=int, default=3, help='Number of classes')
+    parser.add_argument('--use-dsem', action='store_true', help='Use DSEM in the encoder')
+    parser.add_argument('--reduction', type=int, default=4, help='DSEM channel reduction ratio')
+    parser.add_argument('--use-dacg', action='store_true', help='Use DACG in the decoder')
+    parser.add_argument('--use-tgsm', action='store_true', help='Use TGSM at the bottleneck')
+    parser.add_argument('--tgsm-version', choices=['basic', 'enhanced', 'advanced'],
+                        default='enhanced', help='TGSM architecture version')
     
     return parser.parse_args()
 
@@ -83,7 +88,10 @@ if __name__ == '__main__':
     in_files = args.input
     out_files = get_output_filenames(args)
 
-    net = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
+    net = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear,
+               use_dsem=args.use_dsem, reduction=args.reduction,
+               use_dacg=args.use_dacg, use_tgsm=args.use_tgsm,
+               tgsm_version=args.tgsm_version)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Loading model {args.model}')
@@ -91,14 +99,22 @@ if __name__ == '__main__':
 
     net.to(device=device)
     state_dict = torch.load(args.model, map_location=device)
-    mask_values = state_dict.pop('mask_values', [0, 1])
+    if 'model_state_dict' in state_dict:
+        state_dict = state_dict['model_state_dict']
+    elif 'state_dict' in state_dict:
+        state_dict = state_dict['state_dict']
+    mask_values = state_dict.pop('mask_values', [0, 85, 170] if args.classes == 3
+                                 else list(range(args.classes)))
+    state_dict = {key: value for key, value in state_dict.items()
+                  if isinstance(value, torch.Tensor)
+                  and 'total_ops' not in key and 'total_params' not in key}
     net.load_state_dict(state_dict)
 
     logging.info('Model loaded!')
 
     for i, filename in enumerate(in_files):
         logging.info(f'Predicting image {filename} ...')
-        img = Image.open(filename)
+        img = Image.open(filename).convert('RGB')
 
         mask = predict_img(net=net,
                            full_img=img,
