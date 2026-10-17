@@ -1,0 +1,10 @@
+Scallion Lane Segmentation
+
+This project is derived from milesial/Pytorch-UNet:
+https://github.com/milesial/Pytorch-UNet
+
+The upstream project and this derivative are distributed under the GNU
+General Public License, version 3. See LICENSE for the complete license text.
+
+The DSEM, DACG, TGSM, boundary-aware training, field-lane evaluation, and
+supporting scripts in this repository are project-specific modifications.

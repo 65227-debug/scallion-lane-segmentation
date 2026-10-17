@@ -1,0 +1,17 @@
+.git
+.github
+.idea
+.venv
+__pycache__
+*.pyc
+data
+checkpoints
+wandb
+runs
+inference_results*
+outputs
+*.pth
+*.pt
+*.onnx
+*.odt
+

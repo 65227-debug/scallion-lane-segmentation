@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments and IDE files
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+
+# Training data, weights and experiment tracking
+data/
+checkpoints/
+wandb/
+runs/
+*.pth
+*.pt
+*.onnx
+
+# Generated inference/evaluation artifacts
+inference_results*/
+outputs/
+epochs_train_loss_recomputed.csv
+mask_samples.png
+
+# Local research notes and scratch helpers (kept locally, not published)
+=0.1.1
+GPT5方案4+连接件
+注意z.odt
+CA.py
+SEA.py
+debug.py
+diagnose_and_fix.py
+leibietiaozheng.py
+recompute_train_loss.py
+test_model.py
+yanmatu.py
+unet/generate_tgsm_visualization.py
+unet/visualize_tgsm.py
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
