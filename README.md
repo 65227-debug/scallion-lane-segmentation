@@ -1,6 +1,6 @@
 # Scallion Lane Segmentation
 
-基于 PyTorch U-Net 的大葱田垄/车道线语义分割，输出背景、左侧车道线和右侧车道线。
+基于 PyTorch U-Net 的大葱田垄沟语义分割，输出背景、垄和沟。输入直接缩放为512 × 512。
 
 ## 环境
 
@@ -16,19 +16,20 @@ pip install -r requirements.txt
 
 - DSEM：编码器中的方向感知空间增强模块。
 - DACG：解码器中的方向感知上下文门控模块。
-- TGSM：瓶颈层中的拓扑引导空间模块，支持 basic、enhanced、advanced。
+- TGSM：瓶颈层中的拓扑引导空间模块。
 
 ```python
 from unet import UNet
 
 model = UNet(
     n_channels=3, n_classes=3,
+    bilinear=True,
     use_dsem=True, use_dacg=True, use_tgsm=True,
     tgsm_version='enhanced',
 )
 ```
 
-模型开关、上采样方式和 TGSM 版本须与权重对应。可先查看权重结构：
+查看模型结构：
 
 ```bash
 python detect_config.py model.pth
@@ -41,8 +42,8 @@ python detect_config.py model.pth
 | 掩码像素值 | 类别索引 | 含义 |
 | ---: | ---: | --- |
 | 0 | 0 | 背景 |
-| 85 | 1 | 左侧车道线 |
-| 170 | 2 | 右侧车道线 |
+| 1 | 1 | 垄 |
+| 2 | 2 | 沟 |
 | 255 | — | 忽略区域 |
 
 ## 推理
@@ -82,7 +83,7 @@ python predict.py \
   --tgsm-version enhanced
 ```
 
-旧权重的批量兼容入口为 `inference_compatible_fixed.py`，权重参数使用 `--model-path model.pth`。
+`inference_compatible_fixed.py` 使用相同入口，接受 `--model-path model.pth`。
 
 ## 评估
 
@@ -96,7 +97,7 @@ python eval_fixed.py \
   --tgsm-version enhanced
 ```
 
-输出各类别 IoU、整体 mIoU、车道线 mIoU、MPA、Cohen's Kappa、参数量及推理速度。
+输出三类混淆矩阵、各类别 IoU、全类与前景 mIoU、MPA、Cohen's Kappa、参数量、文件大小及512 × 512单图推理速度。
 
 ## 许可与致谢
 

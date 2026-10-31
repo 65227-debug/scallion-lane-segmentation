@@ -25,6 +25,7 @@ runs/
 # Generated inference/evaluation artifacts
 inference_results*/
 outputs/
+evaluation.json
 
 # OS/editor noise
 .DS_Store
